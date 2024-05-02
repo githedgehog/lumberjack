@@ -107,6 +107,9 @@ type Logger struct {
 	// using gzip. The default is not to perform compression.
 	Compress bool `json:"compress" yaml:"compress"`
 
+	// FileMode represents the file mode to be used when opening the new log file, 0600 is the default.
+	FileMode os.FileMode
+
 	size int64
 	file *os.File
 	mu   sync.Mutex
@@ -212,7 +215,7 @@ func (l *Logger) openNew() error {
 	}
 
 	name := l.filename()
-	mode := os.FileMode(0600)
+	mode := l.fileMode()
 	info, err := osStat(name)
 	if err == nil {
 		// Copy the mode off the old logfile.
@@ -295,6 +298,14 @@ func (l *Logger) filename() string {
 	}
 	name := filepath.Base(os.Args[0]) + "-lumberjack.log"
 	return filepath.Join(os.TempDir(), name)
+}
+
+// fileMode returns the FileMode to use when creating the log file.
+func (l *Logger) fileMode() os.FileMode {
+	if l.FileMode == 0 {
+		return 0600
+	}
+	return l.FileMode
 }
 
 // millRunOnce performs compression and removal of stale log files.
